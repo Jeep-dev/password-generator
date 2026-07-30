@@ -1,5 +1,7 @@
 # Password Generator v2.0 🔒
 
+[![Download APK v2.0.0](https://img.shields.io/badge/Download-APK_v2.0.0-6750A4?style=for-the-badge&logo=android)](https://raw.githubusercontent.com/Jeep-dev/password-generator/main/app/build/apk/PasswordGen_v2.apk)
+
 A clean, modern, **100% Kotlin** password generator for Android — now upgraded to **targetSdk 37 (Android 17)** with Material You aesthetics.
 
 ![App Icon](app/src/main/res/mipmap-xxxhdpi/ic_launcher.png)
@@ -105,7 +107,9 @@ apksigner sign --ks release.keystore \
 
 ## 📦 Pre-built APK
 
-A ready-to-install APK is provided in [`app/build/apk/PasswordGen_v2.apk`](app/build/apk/PasswordGen_v2.apk).
+> **👉 [⬇️ Download PasswordGen_v2.apk (77 KB)](https://raw.githubusercontent.com/Jeep-dev/password-generator/main/app/build/apk/PasswordGen_v2.apk)** — Click to download directly!
+
+A ready-to-install APK is also available at [`app/build/apk/PasswordGen_v2.apk`](app/build/apk/PasswordGen_v2.apk).
 
 ```
 package: com.passwordgen
@@ -120,6 +124,8 @@ minSdkVersion: 23
 ```bash
 adb install app/build/apk/PasswordGen_v2.apk
 ```
+
+Or download the APK from the link above and install it manually on your device.
 
 ---
 
