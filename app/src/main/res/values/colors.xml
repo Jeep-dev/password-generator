@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#FF6750A4</color>
+    <color name="on_primary">#FFFFFFFF</color>
+    <color name="primary_container">#FFEADDFF</color>
+    <color name="on_primary_container">#FF21005D</color>
+    <color name="secondary">#FF625B71</color>
+    <color name="on_secondary">#FFFFFFFF</color>
+    <color name="secondary_container">#FFE8DEF8</color>
+    <color name="on_secondary_container">#FF1D192B</color>
+    <color name="tertiary">#FF7D5260</color>
+    <color name="on_tertiary">#FFFFFFFF</color>
+    <color name="error">#FFB3261E</color>
+    <color name="on_error">#FFFFFFFF</color>
+    <color name="surface">#FFFFFBFE</color>
+    <color name="on_surface">#FF1C1B1F</color>
+    <color name="background">#FFFFFBFE</color>
+    <color name="on_background">#FF1C1B1F</color>
+    <color name="surface_variant">#FFE7E0EC</color>
+    <color name="on_surface_variant">#FF49454F</color>
+    <color name="outline">#FF79747E</color>
+    <color name="strength_weak">#FFB3261E</color>
+    <color name="strength_medium">#FFE6A200</color>
+    <color name="strength_strong">#FF4CAF50</color>
+    <color name="strength_very_strong">#FF2E7D32</color>
+    <color name="card_background">#FFF7F2FA</color>
+    <color name="slider_track">#FFEADDFF</color>
+</resources>
