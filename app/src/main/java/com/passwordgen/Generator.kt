@@ -9,31 +9,52 @@ import kotlin.math.log2
 /** 一次生成的结果：文本和它的熵（比特）。 */
 data class Secret(val text: String, val entropyBits: Double)
 
-enum class CharClass(val chars: String) {
-    UPPER("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
-    LOWER("abcdefghijklmnopqrstuvwxyz"),
-    DIGIT("0123456789"),
-    // 不含引号、反斜杠、反引号和竖线：这些字符粘贴进命令行、配置文件或网页表单时容易出问题。
-    SYMBOL("!@#$%^&*()-_=+[]{};:,.<>?/~"),
-}
+enum class CharClass { UPPER, LOWER, DIGIT, SYMBOL }
+
+private const val UPPER_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+private const val LOWER_CHARS = "abcdefghijklmnopqrstuvwxyz"
+private const val DIGIT_CHARS = "0123456789"
 
 /** 容易看错的字符：0/O、1/l/I。 */
 const val AMBIGUOUS = "0O1lI"
+
+/** 可选的符号预设。有些网站只接受部分符号，所以符号集可以自己定。 */
+enum class SymbolPreset(val symbols: String) {
+    // 不含引号、反斜杠、反引号和竖线：这些字符粘贴进命令行、配置文件或网页表单时容易出问题。
+    ALL("!@#$%^&*()-_=+[]{};:,.<>?/~"),
+    // 绝大多数网站都接受的一组。
+    COMMON("!@#$%^&*-_"),
+}
+
+/** 只保留可见的 ASCII 符号（不含字母、数字、空格），去重并保持输入顺序。 */
+fun sanitizeSymbols(input: String): String =
+    input.filter { it in '!'..'~' && !it.isLetterOrDigit() }.toSet().joinToString("")
 
 data class PasswordOptions(
     val length: Int = 20,
     val classes: Set<CharClass> = CharClass.entries.toSet(),
     val excludeAmbiguous: Boolean = false,
+    val symbols: String = SymbolPreset.ALL.symbols,
 ) {
     init {
         require(length in MIN_LENGTH..MAX_LENGTH) { "length $length" }
         require(classes.isNotEmpty()) { "至少要选一种字符" }
+        require(symbols == sanitizeSymbols(symbols)) { "symbols $symbols" }
+        require(CharClass.SYMBOL !in classes || symbols.isNotEmpty()) { "选了符号就至少要有一个符号" }
     }
 
     /** 实际使用的各类字符（已按设置去掉易混淆字符）。 */
     fun charSets(): List<String> = CharClass.entries
         .filter { it in classes }
-        .map { c -> if (excludeAmbiguous) c.chars.filterNot { it in AMBIGUOUS } else c.chars }
+        .map { c ->
+            val chars = when (c) {
+                CharClass.UPPER -> UPPER_CHARS
+                CharClass.LOWER -> LOWER_CHARS
+                CharClass.DIGIT -> DIGIT_CHARS
+                CharClass.SYMBOL -> symbols
+            }
+            if (excludeAmbiguous) chars.filterNot { it in AMBIGUOUS } else chars
+        }
 
     companion object {
         const val MIN_LENGTH = 8

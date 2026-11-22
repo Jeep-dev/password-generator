@@ -116,6 +116,30 @@ class GeneratorTest {
         assertEquals("超过 1 万亿年", crackTime(128.0))
     }
 
+    @Test
+    fun customSymbols() {
+        assertEquals("!@#", sanitizeSymbols("!a@1# 中!@"))
+        assertEquals("", sanitizeSymbols("abc 123 中文"))
+        for (sym in listOf("!", "!@#", SymbolPreset.COMMON.symbols)) {
+            val o = PasswordOptions(length = 16, symbols = sym)
+            repeat(300) {
+                val s = gen.password(o).text
+                val used = s.filterNot { it.isLetterOrDigit() }
+                assertTrue("$s 用了 $sym 以外的符号", used.all { it in sym })
+                assertTrue(used.isNotEmpty())
+            }
+            val sizes = listOf(26, 26, 10, sym.length)
+            assertEquals(passwordEntropy(sizes, 16), gen.password(o).entropyBits, 1e-9)
+        }
+        // 不选符号时，符号集是什么都无所谓。
+        PasswordOptions(classes = setOf(CharClass.LOWER), symbols = "")
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun rejectsEmptySymbolsWhenSymbolsSelected() {
+        PasswordOptions(symbols = "")
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun rejectsEmptyClassSet() {
         PasswordOptions(classes = emptySet())

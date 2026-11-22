@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -33,6 +34,8 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -68,6 +71,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -111,8 +115,6 @@ private fun AppTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = scheme, content = content)
 }
 
-private enum class Mode(val label: String) { PASSWORD("随机密码"), PASSPHRASE("单词口令"), PIN("PIN 码") }
-
 // ---------------------------------------------------------------------------
 // 主界面
 // ---------------------------------------------------------------------------
@@ -122,12 +124,18 @@ private enum class Mode(val label: String) { PASSWORD("随机密码"), PASSPHRAS
 private fun GeneratorScreen(generator: Generator) {
     // 设置和结果都只放在内存里：界面配置变化时 Activity 不会重建（见 AndroidManifest 的 configChanges），
     // 也不写进 savedInstanceState，避免密码被系统持久化。
-    var mode by remember { mutableStateOf(Mode.PASSWORD) }
-    var pwOpts by remember { mutableStateOf(PasswordOptions()) }
-    var ppOpts by remember { mutableStateOf(PassphraseOptions()) }
-    var pinOpts by remember { mutableStateOf(PinOptions()) }
+    val context = LocalContext.current
+    val saved = remember { SettingsStore.load(context) }
+    var mode by remember { mutableStateOf(saved.mode) }
+    var pwOpts by remember { mutableStateOf(saved.password) }
+    var ppOpts by remember { mutableStateOf(saved.passphrase) }
+    var pinOpts by remember { mutableStateOf(saved.pin) }
     var regen by remember { mutableIntStateOf(0) }
     var secret by remember { mutableStateOf<Secret?>(null) }
+
+    LaunchedEffect(mode, pwOpts, ppOpts, pinOpts) {
+        SettingsStore.save(context, Settings(mode, pwOpts, ppOpts, pinOpts))
+    }
 
     LaunchedEffect(mode, pwOpts, ppOpts, pinOpts, regen) {
         secret = when (mode) {
@@ -137,7 +145,6 @@ private fun GeneratorScreen(generator: Generator) {
         }
     }
 
-    val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -325,8 +332,67 @@ private fun PasswordOptionsUi(o: PasswordOptions, onChange: (PasswordOptions) ->
             )
         }
     }
+    if (CharClass.SYMBOL in o.classes) {
+        SymbolsPicker(o.symbols) { onChange(o.copy(symbols = it)) }
+    }
     SwitchRow("排除易混淆字符", "不使用 0 O 1 l I", o.excludeAmbiguous) { onChange(o.copy(excludeAmbiguous = it)) }
 }
+
+/** 有些网站只接受部分符号：可以选预设，也可以自己填允许的符号。 */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SymbolsPicker(symbols: String, onChange: (String) -> Unit) {
+    var custom by remember { mutableStateOf(SymbolPreset.entries.none { it.symbols == symbols }) }
+    var text by remember { mutableStateOf(symbols) }
+
+    SectionLabel("可用符号")
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (preset in SymbolPreset.entries) {
+            FilterChip(
+                selected = !custom && symbols == preset.symbols,
+                onClick = { custom = false; onChange(preset.symbols) },
+                label = { Text(preset.label) },
+            )
+        }
+        FilterChip(
+            selected = custom,
+            onClick = { custom = true; text = symbols },
+            label = { Text("自定义") },
+        )
+    }
+    if (custom) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = { t ->
+                text = sanitizeSymbols(t)
+                if (text.isNotEmpty()) onChange(text)
+            },
+            label = { Text("允许的符号") },
+            placeholder = { Text("例如 !@#$", fontFamily = FontFamily.Monospace) },
+            isError = text.isEmpty(),
+            supportingText = {
+                Text(if (text.isEmpty()) "至少输入一个符号" else "共 ${text.length} 个。只认键盘上的英文符号，重复的会自动去掉")
+            },
+            singleLine = true,
+            textStyle = LocalTextStyle.current.copy(fontFamily = FontFamily.Monospace),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, autoCorrectEnabled = false),
+            modifier = Modifier.fillMaxWidth(),
+        )
+    } else {
+        Text(
+            symbols,
+            fontFamily = FontFamily.Monospace,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+private val SymbolPreset.label: String
+    get() = when (this) {
+        SymbolPreset.ALL -> "全部"
+        SymbolPreset.COMMON -> "常用"
+    }
 
 private val CharClass.label: String
     get() = when (this) {

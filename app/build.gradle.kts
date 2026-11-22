@@ -12,8 +12,8 @@ android {
         applicationId = "com.passwordgen"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "3.0.0"
+        versionCode = 4
+        versionName = "3.1.0"
     }
 
     // 签名信息由 CI 通过环境变量传入（见 .github/workflows/build.yml），仓库里不放任何密钥。
