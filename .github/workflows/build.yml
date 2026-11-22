@@ -1,0 +1,58 @@
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Unit tests
+        run: gradle --no-daemon :app:testDebugUnitTest
+      - name: Build signed release APK
+        env:
+          KEY_B64: ${{ secrets.PG_KEYSTORE_B64 }}
+          PG_KEYSTORE_PASSWORD: ${{ secrets.PG_KEYSTORE_PASSWORD }}
+          PG_KEY_PASSWORD: ${{ secrets.PG_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEY_B64" ]; then
+            echo "::error::缺少签名 secrets：PG_KEYSTORE_B64、PG_KEYSTORE_PASSWORD、PG_KEY_PASSWORD"
+            exit 1
+          fi
+          printf '%s' "$KEY_B64" | base64 --decode > "$RUNNER_TEMP/app.jks"
+          export PG_KEYSTORE_FILE="$RUNNER_TEMP/app.jks"
+          gradle --no-daemon :app:assembleRelease
+          apk=app/build/outputs/apk/release/app-release.apk
+          "$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner" verify --print-certs "$apk"
+          VERSION=$(sed -n 's/^ *versionName = "\(.*\)".*/\1/p' app/build.gradle.kts)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          mkdir -p out
+          cp "$apk" "out/PasswordGen-v$VERSION.apk"
+          ls -l out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PasswordGen-v${{ env.VERSION }}
+          path: out/PasswordGen-v${{ env.VERSION }}.apk
+      - name: Release (one per version, from main)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="v$VERSION"
+          apk="out/PasswordGen-v$VERSION.apk"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" "$apk" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$tag" "$apk" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest \
+              --title "密码生成器 v$VERSION" \
+              --notes "随机密码、单词口令（EFF 词表）、PIN 码；安全剪贴板（标记敏感 + 30 秒自动清空）；不申请任何权限。"
+          fi

@@ -1,169 +1,47 @@
-# Password Generator v2.0 🔒
+# 密码生成器
 
-[![Download APK v2.0.0](https://img.shields.io/badge/Download-APK_v2.0.0-6750A4?style=for-the-badge&logo=android)](https://raw.githubusercontent.com/Jeep-dev/password-generator/main/app/build/apk/PasswordGen_v2.apk)
+[![下载最新版 APK](https://img.shields.io/github/v/release/Jeep-dev/password-generator?label=%E4%B8%8B%E8%BD%BD%20APK&style=for-the-badge&logo=android)](https://github.com/Jeep-dev/password-generator/releases/latest)
 
-A clean, modern, **100% Kotlin** password generator for Android — now upgraded to **targetSdk 37 (Android 17)** with Material You aesthetics.
+一个干净的 Android 密码生成器：Kotlin + Jetpack Compose（Material 3，跟随壁纸取色、支持深色模式）。
 
-![App Icon](app/src/main/res/mipmap-xxxhdpi/ic_launcher.png)
+## 功能
 
----
+- **随机密码**：长度 8–64 位（默认 20 位）；大写、小写、数字、符号可选；可排除易混淆字符（`0 O 1 l I`）。保证每种选中的字符类型至少出现一次，且不破坏随机性（整串重抽，而不是往固定位置塞字符）。
+- **单词口令**：从 [EFF 大词表](https://www.eff.org/dice)（7776 个英文单词）随机抽 4–10 个词，如 `cobweb-unsaid-gravity-pouch-uncork-mulch`。好记又够强：6 个词约 78 位熵。可选分隔符、首字母大写、加一个数字。
+- **PIN 码**：4–12 位纯数字。
+- **准确的强度评估**：按实际生成规则精确计算熵（比特），显示强度等级和离线暴力破解的估算耗时。
+- **安全剪贴板**：复制时标记为敏感内容（Android 13+ 的复制提示和输入法剪贴板历史里不显示明文），30 秒后自动清空；如果这期间你复制了别的东西，就不会去动它。
 
-## ✨ Features
+## 安全设计
 
-- **🔐 Strong Random Passwords** — Uses `SecureRandom` with configurable character pools
-- **⚙️ Customizable Options**
-  - Uppercase / Lowercase letters
-  - Numbers & Symbols
-  - Exclude ambiguous characters (`0O1lI|`)
-- **📏 Adjustable Length** — Slide from 6 to 32 characters
-- **📊 Real-time Strength Meter** — Entropy calculation with visual color bar (Weak → Very Strong)
-- **📜 Recent Passwords History** — Saves last 5 generated passwords; tap to copy instantly
-- **📳 Haptic Feedback** — Micro-vibration on Generate & Copy (v2.0)
-- **🎨 Immersive Status Bar** — Edge-to-edge design with light status icons
-- **🔄 Instant Copy** — One-tap copy to clipboard
+- 随机数来自 `SecureRandom`（系统的密码学安全随机数）。
+- 不申请任何权限，**连网络权限都没有**；不保存任何生成过的密码，没有历史记录。
+- 关闭系统备份；最近任务列表里不显示应用截图（Android 13+）。
+- 生成逻辑（`Generator.kt`）是不依赖 Android 的纯 Kotlin，并有单元测试覆盖：字符范围、每类至少出现一次、熵的计算（和穷举结果对比）、数字分布均匀性、词表完整性（锁定 SHA-256）。
 
-## 📸 Screenshots
+## 下载
 
-| Main Screen | History |
-|:---:|:---:|
-| ![Screenshot](screenshots/main.png) | ![History](screenshots/history.png) |
+到 [Releases](https://github.com/Jeep-dev/password-generator/releases/latest) 下载 `PasswordGen-v*.apk`。
 
-> *Screenshots will be added after first release.*
+> v3 换了新的签名密钥，不能直接覆盖安装 v2：请先卸载旧版再安装。
 
----
+## 构建
 
-## 🏗️ Project Structure
+每次推送都会由 GitHub Actions（`.github/workflows/build.yml`）跑单元测试并编译签名的 release APK；推送到 `main` 时按版本号发布到 Releases。版本号在 `app/build.gradle.kts` 的 `versionName`。
 
-```
-PasswordGenerator/
-├── app/
-│   ├── build/
-│   │   └── apk/
-│   │       └── PasswordGen_v2.apk    # Pre-built APK (targetSdk 37)
-│   └── src/
-│       └── main/
-│           ├── AndroidManifest.xml
-│           ├── java/
-│           │   └── com/passwordgen/
-│           │       └── MainActivity.kt    # 100% Kotlin — single-file app
-│           └── res/
-│               ├── drawable/              # Vector icons & UI drawables
-│               ├── mipmap-{hdpi,mdpi,xhdpi,xxhdpi,xxxhdpi}/
-│               │   └── ic_launcher.png    # App launcher icons
-│               └── values/
-│                   ├── colors.xml         # Material You color palette
-│                   └── strings.xml
-├── build.sh                               # Manual build script
-├── LICENSE                                # MIT License
-├── .gitignore
-└── README.md                              # This file
+签名用的密钥放在仓库 Secrets 里：`PG_KEYSTORE_B64`（keystore 的 base64）、`PG_KEYSTORE_PASSWORD`、`PG_KEY_PASSWORD`。
+
+本地构建需要 JDK 17、Android SDK 和 Gradle 8.11+：
+
+```sh
+gradle :app:testDebugUnitTest   # 单元测试
+gradle :app:assembleDebug       # 调试版 APK
 ```
 
----
+## 致谢
 
-## 🛠️ Build from Source
+单词口令使用 Electronic Frontier Foundation 的 [EFF Large Wordlist](https://www.eff.org/deeplinks/2016/07/new-wordlists-random-passphrases)，按 [CC BY 3.0 US](https://creativecommons.org/licenses/by/3.0/us/) 许可使用（`app/src/main/assets/eff_large_wordlist.txt` 只保留了原文件的单词列）。
 
-### Prerequisites
+## 许可
 
-- **Android SDK** (platform `android-37` recommended, `android-34` minimum)
-- **Kotlin compiler** (`kotlinc` 1.3+)
-- **Build tools**: `d8`, `aapt2`, `apksigner`, `zip`
-- **Java 17+** (for `apksigner`)
-
-### Quick Build
-
-```bash
-# 1. Compile Kotlin → class
-kotlinc -cp $ANDROID_HOME/platforms/android-37/android.jar \
-  -d build/kotlin_classes \
-  app/src/main/java/com/passwordgen/MainActivity.kt
-
-# 2. Convert class → dex (with Kotlin stdlib)
-d8 --lib $ANDROID_HOME/platforms/android-37/android.jar \
-  --output build/tmpdex/ \
-  build/kotlin_classes/com/passwordgen/*.class \
-  /path/to/kotlin-stdlib.jar
-
-# 3. Compile resources
-aapt2 compile --dir app/src/main/res/ -o build/compiled_res/all.zip
-
-# 4. Link APK
-aapt2 link -o build/unsigned.apk \
-  -I $ANDROID_HOME/platforms/android-34/android.jar \
-  --manifest app/src/main/AndroidManifest.xml \
-  build/compiled_res/*.flat
-
-# 5. Add dex & sign
-cd build && zip unsigned.apk tmpdex/classes.dex
-apksigner sign --ks release.keystore \
-  --ks-pass pass:android \
-  --ks-key-alias passwordgen \
-  unsigned.apk
-```
-
-> 💡 See [`build.sh`](build.sh) for the full automated build script.
-
----
-
-## 📦 Pre-built APK
-
-> **👉 [⬇️ Download PasswordGen_v2.apk (77 KB)](https://raw.githubusercontent.com/Jeep-dev/password-generator/main/app/build/apk/PasswordGen_v2.apk)** — Click to download directly!
-
-A ready-to-install APK is also available at [`app/build/apk/PasswordGen_v2.apk`](app/build/apk/PasswordGen_v2.apk).
-
-```
-package: com.passwordgen
-versionCode: 2
-versionName: 2.0.0
-targetSdkVersion: 37
-minSdkVersion: 23
-```
-
-### Install via ADB
-
-```bash
-adb install app/build/apk/PasswordGen_v2.apk
-```
-
-Or download the APK from the link above and install it manually on your device.
-
----
-
-## 📋 Changelog
-
-### v2.0.0 (Current)
-- ✅ **100% Kotlin** — Full rewrite from Java
-- ✅ **targetSdk 37 (Android 17)**
-- ✅ **Recent Passwords History** — Last 5 passwords, tap to copy
-- ✅ **Haptic Feedback** — On Generate & Copy
-- ✅ **Immersive Status Bar** — Color-matched background + light icons
-- ✅ **Compact UI** — Single-screen layout with smooth scrolling
-- ✅ **Enhanced Strength Meter** — Entropy-based with color-coded bar
-
-### v1.0 (Original)
-- Java-based implementation
-- Basic password generation with options
-
----
-
-## 🔒 Security
-
-- All passwords are **generated locally** on-device using `SecureRandom`
-- **No data leaves your device** — no network permissions required
-- History is stored **in memory only** (cleared on app restart)
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
-
----
-
-## 👨‍💻 Author
-
-**Jeep-dev** — [GitHub](https://github.com/Jeep-dev)
-
----
-
-*Made with ❤️ and Kotlin*
+代码以 [MIT](LICENSE) 许可发布。
