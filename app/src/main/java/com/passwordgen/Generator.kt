@@ -163,13 +163,13 @@ fun crackTime(bits: Double, guessesPerSecond: Double = 1e11): String {
         seconds < hour -> "约 ${(seconds / minute).toInt()} 分钟"
         seconds < day -> "约 ${(seconds / hour).toInt()} 小时"
         seconds < year -> "约 ${(seconds / day).toInt()} 天"
-        else -> "约 " + bigYears(seconds / year)
+        else -> years(seconds / year)
     }
 }
 
-private fun bigYears(years: Double): String = when {
-    years < 1e4 -> "${years.toLong()} 年"
-    years < 1e8 -> "${(years / 1e4).toLong()} 万年"
-    years < 1e12 -> "${(years / 1e8).toLong()} 亿年"
+private fun years(y: Double): String = when {
+    y < 1e4 -> "约 ${y.toLong()} 年"
+    y < 1e8 -> "约 ${(y / 1e4).toLong()} 万年"
+    y < 1e12 -> "约 ${(y / 1e8).toLong()} 亿年"
     else -> "超过 1 万亿年"
 }

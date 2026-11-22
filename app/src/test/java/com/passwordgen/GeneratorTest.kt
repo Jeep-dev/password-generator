@@ -111,6 +111,8 @@ class GeneratorTest {
         assertEquals(Strength.STRONG, strengthOf(70.0))
         assertEquals(Strength.VERY_STRONG, strengthOf(100.0))
         assertEquals("不到 1 秒", crackTime(20.0))
+        assertEquals("约 66 天", crackTime(60.0))
+        assertEquals("约 19 万年", crackTime(80.0))
         assertEquals("超过 1 万亿年", crackTime(128.0))
     }
 
